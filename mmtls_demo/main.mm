@@ -16,10 +16,10 @@
 extern "C" {
     #include "uECC.h"
     #include "openssl/hmac.h"
-//    #include "openssl/kdf.h"
+    // #include "openssl/kdf.h"
     // micro-ecc依赖的随机数生成算法
     static int iOS_RNG(uint8_t *dest, unsigned size) {
-        return SecRandomCopyBytes(kSecRandomDefault, size, dest) == 0 ? 1 : 0;
+        return SecRandomCopyBytes(kSecRandomDefault, size, dest) == 0 ? 1 : 0; //获得size个密码安全的随机数
     }
 }
 
@@ -81,9 +81,9 @@ struct client_data {
     uint8_t verify_key[PUB_SIZE];
     
     // 校验签名数据，大小是私钥的大小*2
-    uint8_t sign_data[PRI_SIZE * 2];
+    uint8_t sign_data[PRI_SIZE * 2];  //来自服务端
     
-    uint8_t ticket[SEC_SIZE]; //?? sec_key对称加密的结果，大小是多少？？
+    uint8_t ticket[SEC_SIZE]; //sec_key对称加密的结果
     
     // PSK协商过程中的客户端随机数
     uint8_t psk_client_random[SEC_SIZE];
@@ -115,6 +115,7 @@ struct server_data {
     uint8_t psk_server_random[SEC_SIZE];
 };
 
+// 显示密钥的长度
 void show_key_size() {
     printf("uECC_secp160r1 public key size:%d, private key size:%d\n",
            uECC_curve_public_key_size(uECC_secp160r1()),
@@ -140,7 +141,7 @@ void simple_xor(uint8_t *input, size_t len, uint8_t key, uint8_t *output) {
     }
 }
 
-// mmtls 1-RTT ECDH
+// mmtls 握手协议：1-RTT ECDHE
 int ECDHE_1_RTT(struct client_data* client, struct server_data* server) {
     uECC_Curve curve = uECC_secp256r1();
     
@@ -204,7 +205,7 @@ int ECDHE_1_RTT(struct client_data* client, struct server_data* server) {
     printf("%s passed.\n", __FUNCTION__);
     return 1;
 }
-
+// mmtls 握手协议：1-RTT PSK
 int PSK_1_RTT(struct client_data* client, struct server_data* server) {
     ECDHE_1_RTT(client, server);
     
@@ -388,10 +389,10 @@ int HKDF_Test3() {
 int main(int argc, const char * argv[]) {
     printf("start\n");
     
-    uECC_set_rng(iOS_RNG);
+    uECC_set_rng(iOS_RNG);  //设置ios随机数
     
-    struct client_data client = {0};
-    struct server_data server = {0};
+    struct client_data client = {0};  //客户端
+    struct server_data server = {0};  //服务端
 
     PSK_1_RTT(&client, &server);
     
